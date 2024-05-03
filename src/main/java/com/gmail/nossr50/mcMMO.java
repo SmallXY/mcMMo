@@ -1,16 +1,5 @@
 package com.gmail.nossr50;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.bukkit.entity.Player;
-import org.bukkit.event.HandlerList;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import com.gmail.nossr50.config.AdvancedConfig;
 import com.gmail.nossr50.config.Config;
 import com.gmail.nossr50.config.HiddenConfig;
@@ -23,12 +12,7 @@ import com.gmail.nossr50.config.skills.repair.RepairConfigManager;
 import com.gmail.nossr50.config.treasure.TreasureConfig;
 import com.gmail.nossr50.database.DatabaseManager;
 import com.gmail.nossr50.database.DatabaseManagerFactory;
-import com.gmail.nossr50.listeners.BlockListener;
-import com.gmail.nossr50.listeners.EntityListener;
-import com.gmail.nossr50.listeners.InventoryListener;
-import com.gmail.nossr50.listeners.PlayerListener;
-import com.gmail.nossr50.listeners.SelfListener;
-import com.gmail.nossr50.listeners.WorldListener;
+import com.gmail.nossr50.listeners.*;
 import com.gmail.nossr50.locale.LocaleLoader;
 import com.gmail.nossr50.party.PartyManager;
 import com.gmail.nossr50.runnables.CheckDateTask;
@@ -43,197 +27,69 @@ import com.gmail.nossr50.skills.child.ChildConfig;
 import com.gmail.nossr50.skills.repair.repairables.Repairable;
 import com.gmail.nossr50.skills.repair.repairables.RepairableManager;
 import com.gmail.nossr50.skills.repair.repairables.SimpleRepairableManager;
-import com.gmail.nossr50.util.ChimaeraWing;
-import com.gmail.nossr50.util.HolidayManager;
-import com.gmail.nossr50.util.LogFilter;
-import com.gmail.nossr50.util.Misc;
-import com.gmail.nossr50.util.ModManager;
-import com.gmail.nossr50.util.Permissions;
+import com.gmail.nossr50.util.*;
 import com.gmail.nossr50.util.blockmeta.chunkmeta.ChunkManager;
 import com.gmail.nossr50.util.blockmeta.chunkmeta.ChunkManagerFactory;
 import com.gmail.nossr50.util.commands.CommandRegistrationManager;
 import com.gmail.nossr50.util.experience.FormulaManager;
 import com.gmail.nossr50.util.player.UserManager;
 import com.gmail.nossr50.util.scoreboards.ScoreboardManager;
-
 import net.gravitydevelopment.updater.mcmmo.Updater;
 import net.gravitydevelopment.updater.mcmmo.Updater.UpdateResult;
 import net.gravitydevelopment.updater.mcmmo.Updater.UpdateType;
 import net.shatteredlands.shatt.backup.ZipLibrary;
+import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class mcMMO extends JavaPlugin {
+    /* Metadata Values */
+    public final static String entityMetadataKey = "mcMMO: Spawned Entity";
+    public final static String blockMetadataKey = "mcMMO: Piston Tracking";
+    public final static String furnaceMetadataKey = "mcMMO: Tracked Furnace";
+    public final static String tntMetadataKey = "mcMMO: Tracked TNT";
+    public final static String tntsafeMetadataKey = "mcMMO: Safe TNT";
+    public final static String customNameKey = "mcMMO: Custom Name";
+    public final static String customVisibleKey = "mcMMO: Name Visibility";
+    public final static String droppedItemKey = "mcMMO: Tracked Item";
+    public final static String infiniteArrowKey = "mcMMO: Infinite Arrow";
+    public final static String bowForceKey = "mcMMO: Bow Force";
+    public final static String arrowDistanceKey = "mcMMO: Arrow Distance";
+    public final static String customDamageKey = "mcMMO: Custom Damage";
+    public final static String disarmedItemKey = "mcMMO: Disarmed Item";
+    public final static String playerDataKey = "mcMMO: Player Data";
+    public static mcMMO p;
+    // Jar Stuff
+    public static File mcmmo;
+    public static FixedMetadataValue metadataValue;
     /* Managers */
-    private static ChunkManager      placeStore;
+    private static ChunkManager placeStore;
     private static RepairableManager repairableManager;
-    private static ModManager        modManager;
-    private static DatabaseManager   databaseManager;
-    private static FormulaManager    formulaManager;
-    private static HolidayManager    holidayManager;
-
+    private static ModManager modManager;
+    private static DatabaseManager databaseManager;
+    private static FormulaManager formulaManager;
+    private static HolidayManager holidayManager;
     /* File Paths */
     private static String mainDirectory;
     private static String flatFileDirectory;
     private static String usersFile;
     private static String modDirectory;
-
-    public static mcMMO p;
-
-    // Jar Stuff
-    public static File mcmmo;
-
-    // Update Check
-    private boolean updateAvailable;
-
     /* Plugin Checks */
     private static boolean combatTagEnabled;
     private static boolean healthBarPluginEnabled;
-
     // Config Validation Check
     public boolean noErrorsInConfigFiles = true;
-
+    // Update Check
+    private boolean updateAvailable;
     // XP Event Check
     private boolean xpEventEnabled;
-
-    /* Metadata Values */
-    public final static String entityMetadataKey   = "mcMMO: Spawned Entity";
-    public final static String blockMetadataKey    = "mcMMO: Piston Tracking";
-    public final static String furnaceMetadataKey  = "mcMMO: Tracked Furnace";
-    public final static String tntMetadataKey      = "mcMMO: Tracked TNT";
-    public final static String tntsafeMetadataKey  = "mcMMO: Safe TNT";
-    public final static String customNameKey       = "mcMMO: Custom Name";
-    public final static String customVisibleKey    = "mcMMO: Name Visibility";
-    public final static String droppedItemKey      = "mcMMO: Tracked Item";
-    public final static String infiniteArrowKey    = "mcMMO: Infinite Arrow";
-    public final static String bowForceKey         = "mcMMO: Bow Force";
-    public final static String arrowDistanceKey    = "mcMMO: Arrow Distance";
-    public final static String customDamageKey     = "mcMMO: Custom Damage";
-    public final static String disarmedItemKey     = "mcMMO: Disarmed Item";
-    public final static String playerDataKey       = "mcMMO: Player Data";
-
-    public static FixedMetadataValue metadataValue;
-
-    /**
-     * Things to be run when the plugin is enabled.
-     */
-    @Override
-    public void onEnable() {
-        try {
-            p = this;
-            getLogger().setFilter(new LogFilter(this));
-            metadataValue = new FixedMetadataValue(this, true);
-
-            PluginManager pluginManager = getServer().getPluginManager();
-            combatTagEnabled = pluginManager.getPlugin("CombatTag") != null;
-            healthBarPluginEnabled = pluginManager.getPlugin("HealthBar") != null;
-
-            setupFilePaths();
-
-            modManager = new ModManager();
-
-            loadConfigFiles();
-
-            if (!noErrorsInConfigFiles) {
-                return;
-            }
-
-            if (getServer().getName().equals("MCPC+")) {
-                checkModConfigs();
-            }
-
-            if (healthBarPluginEnabled) {
-                getLogger().info("HealthBar plugin found, mcMMO's healthbars are automatically disabled.");
-            }
-
-            if (pluginManager.getPlugin("NoCheatPlus") != null && pluginManager.getPlugin("CompatNoCheatPlus") == null) {
-                getLogger().warning("NoCheatPlus plugin found, but CompatNoCheatPlus was not found!");
-                getLogger().warning("mcMMO will not work properly alongside NoCheatPlus without CompatNoCheatPlus");
-            }
-
-            databaseManager = DatabaseManagerFactory.getDatabaseManager();
-
-            registerEvents();
-            registerCustomRecipes();
-
-            PartyManager.loadParties();
-
-            formulaManager = new FormulaManager();
-            holidayManager = new HolidayManager();
-
-            for (Player player : getServer().getOnlinePlayers()) {
-                UserManager.addUser(player); // In case of reload add all users back into UserManager
-                ScoreboardManager.setupPlayer(player);
-            }
-
-            debug("Version " + getDescription().getVersion() + " is enabled!");
-
-            scheduleTasks();
-            CommandRegistrationManager.registerCommands();
-
-            placeStore = ChunkManagerFactory.getChunkManager(); // Get our ChunkletManager
-
-            checkForUpdates();
-
-            if (Config.getInstance().getPTPCommandWorldPermissions()) {
-                Permissions.generateWorldTeleportPermissions();
-            }
-        }
-        catch (Throwable t) {
-            getLogger().severe("There was an error while enabling mcMMO!");
-
-            if (!(t instanceof ExceptionInInitializerError)) {
-                t.printStackTrace();
-            }
-            else {
-                getLogger().info("Please do not replace the mcMMO jar while the server is running.");
-            }
-
-            getServer().getPluginManager().disablePlugin(this);
-        }
-    }
-
-    /**
-     * Things to be run when the plugin is disabled.
-     */
-    @Override
-    public void onDisable() {
-        try {
-            Alchemy.finishAllBrews();   // Finish all partially complete AlchemyBrewTasks to prevent vanilla brewing continuation on restart
-            UserManager.saveAll();      // Make sure to save player information if the server shuts down
-            PartyManager.saveParties(); // Save our parties
-            ScoreboardManager.teardownAll();
-            formulaManager.saveFormula();
-            holidayManager.saveAnniversaryFiles();
-            placeStore.saveAll();       // Save our metadata
-            placeStore.cleanUp();       // Cleanup empty metadata stores
-        }
-        catch (NullPointerException e) {}
-
-        debug("Canceling all tasks...");
-        getServer().getScheduler().cancelTasks(this); // This removes our tasks
-        debug("Unregister all events...");
-        HandlerList.unregisterAll(this); // Cancel event registrations
-
-        if (Config.getInstance().getBackupsEnabled()) {
-            // Remove other tasks BEFORE starting the Backup, or we just cancel it straight away.
-            try {
-                ZipLibrary.mcMMOBackup();
-            }
-            catch (IOException e) {
-                getLogger().severe(e.toString());
-            }
-            catch (Throwable e) {
-                if (e instanceof NoClassDefFoundError) {
-                    getLogger().severe("Backup class not found!");
-                    getLogger().info("Please do not replace the mcMMO jar while the server is running.");
-                }
-                else {
-                    getLogger().severe(e.toString());
-                }
-            }
-        }
-
-        debug("Was disabled."); // How informative!
-    }
 
     public static String getMainDirectory() {
         return mainDirectory;
@@ -249,26 +105,6 @@ public class mcMMO extends JavaPlugin {
 
     public static String getModDirectory() {
         return modDirectory;
-    }
-
-    public boolean isUpdateAvailable() {
-        return updateAvailable;
-    }
-
-    public boolean isXPEventEnabled() {
-        return xpEventEnabled;
-    }
-
-    public void setXPEventEnabled(boolean enabled) {
-        this.xpEventEnabled = enabled;
-    }
-
-    public void toggleXpEventEnabled() {
-        xpEventEnabled = !xpEventEnabled;
-    }
-
-    public void debug(String message) {
-        getLogger().info("[Debug] " + message);
     }
 
     public static FormulaManager getFormulaManager() {
@@ -291,13 +127,13 @@ public class mcMMO extends JavaPlugin {
         return databaseManager;
     }
 
-    public static ModManager getModManager() {
-        return modManager;
-    }
-
     @Deprecated
     public static void setDatabaseManager(DatabaseManager databaseManager) {
         mcMMO.databaseManager = databaseManager;
+    }
+
+    public static ModManager getModManager() {
+        return modManager;
     }
 
     public static boolean isCombatTagEnabled() {
@@ -306,6 +142,118 @@ public class mcMMO extends JavaPlugin {
 
     public static boolean isHealthBarPluginEnabled() {
         return healthBarPluginEnabled;
+    }
+
+    /**
+     * Things to be run when the plugin is enabled.
+     */
+    @Override
+    public void onEnable() {
+        try {
+            p = this;
+            getLogger().setFilter(new LogFilter(this));
+            metadataValue = new FixedMetadataValue(this, true);
+            PluginManager pluginManager = getServer().getPluginManager();
+            combatTagEnabled = pluginManager.getPlugin("CombatTag") != null;
+            healthBarPluginEnabled = pluginManager.getPlugin("HealthBar") != null;
+            setupFilePaths();
+            modManager = new ModManager();
+            loadConfigFiles();
+            if (!noErrorsInConfigFiles) {
+                return;
+            }
+            if (getServer().getName().equals("MCPC+")) {
+                checkModConfigs();
+            }
+            if (healthBarPluginEnabled) {
+                getLogger().info("HealthBar plugin found, mcMMO's healthbars are automatically disabled.");
+            }
+            if (pluginManager.getPlugin("NoCheatPlus") != null && pluginManager.getPlugin("CompatNoCheatPlus") == null) {
+                getLogger().warning("NoCheatPlus plugin found, but CompatNoCheatPlus was not found!");
+                getLogger().warning("mcMMO will not work properly alongside NoCheatPlus without CompatNoCheatPlus");
+            }
+            databaseManager = DatabaseManagerFactory.getDatabaseManager();
+            registerEvents();
+            registerCustomRecipes();
+            PartyManager.loadParties();
+            formulaManager = new FormulaManager();
+            holidayManager = new HolidayManager();
+            for (Player player : getServer().getOnlinePlayers()) {
+                UserManager.addUser(player); // In case of reload add all users back into UserManager
+                ScoreboardManager.setupPlayer(player);
+            }
+            debug("Version " + getDescription().getVersion() + " is enabled!");
+            scheduleTasks();
+            CommandRegistrationManager.registerCommands();
+            placeStore = ChunkManagerFactory.getChunkManager(); // Get our ChunkletManager
+            checkForUpdates();
+            if (Config.getInstance().getPTPCommandWorldPermissions()) {
+                Permissions.generateWorldTeleportPermissions();
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
+    /**
+     * Things to be run when the plugin is disabled.
+     */
+    @Override
+    public void onDisable() {
+        try {
+            Alchemy.finishAllBrews();   // Finish all partially complete AlchemyBrewTasks to prevent vanilla brewing continuation on restart
+            UserManager.saveAll();      // Make sure to save player information if the server shuts down
+            PartyManager.saveParties(); // Save our parties
+            ScoreboardManager.teardownAll();
+            formulaManager.saveFormula();
+            holidayManager.saveAnniversaryFiles();
+            placeStore.saveAll();       // Save our metadata
+            placeStore.cleanUp();       // Cleanup empty metadata stores
+        } catch (NullPointerException e) {
+        }
+
+        debug("Canceling all tasks...");
+        getServer().getScheduler().cancelTasks(this); // This removes our tasks
+        debug("Unregister all events...");
+        HandlerList.unregisterAll(this); // Cancel event registrations
+
+        if (Config.getInstance().getBackupsEnabled()) {
+            // Remove other tasks BEFORE starting the Backup, or we just cancel it straight away.
+            try {
+                ZipLibrary.mcMMOBackup();
+            } catch (IOException e) {
+                getLogger().severe(e.toString());
+            } catch (Throwable e) {
+                if (e instanceof NoClassDefFoundError) {
+                    getLogger().severe("Backup class not found!");
+                    getLogger().info("Please do not replace the mcMMO jar while the server is running.");
+                } else {
+                    getLogger().severe(e.toString());
+                }
+            }
+        }
+
+        debug("Was disabled."); // How informative!
+    }
+
+    public boolean isUpdateAvailable() {
+        return updateAvailable;
+    }
+
+    public boolean isXPEventEnabled() {
+        return xpEventEnabled;
+    }
+
+    public void setXPEventEnabled(boolean enabled) {
+        this.xpEventEnabled = enabled;
+    }
+
+    public void toggleXpEventEnabled() {
+        xpEventEnabled = !xpEventEnabled;
+    }
+
+    public void debug(String message) {
+        getLogger().info("[Debug] " + message);
     }
 
     /**
@@ -336,10 +284,10 @@ public class mcMMO extends JavaPlugin {
             }
         }
 
-        File oldArmorFile    = new File(modDirectory + "armor.yml");
-        File oldBlocksFile   = new File(modDirectory + "blocks.yml");
+        File oldArmorFile = new File(modDirectory + "armor.yml");
+        File oldBlocksFile = new File(modDirectory + "blocks.yml");
         File oldEntitiesFile = new File(modDirectory + "entities.yml");
-        File oldToolsFile    = new File(modDirectory + "tools.yml");
+        File oldToolsFile = new File(modDirectory + "tools.yml");
 
         if (oldArmorFile.exists()) {
             if (!oldArmorFile.renameTo(new File(modDirectory + "armor.default.yml"))) {
@@ -458,8 +406,7 @@ public class mcMMO extends JavaPlugin {
 
         if (purgeIntervalTicks == 0) {
             new UserPurgeTask().runTaskLater(this, 2 * Misc.TICK_CONVERSION_FACTOR); // Start 2 seconds after startup.
-        }
-        else if (purgeIntervalTicks > 0) {
+        } else if (purgeIntervalTicks > 0) {
             new UserPurgeTask().runTaskTimer(this, purgeIntervalTicks, purgeIntervalTicks);
         }
 
@@ -468,8 +415,7 @@ public class mcMMO extends JavaPlugin {
 
         if (kickIntervalTicks == 0) {
             new PartyAutoKickTask().runTaskLater(this, 2 * Misc.TICK_CONVERSION_FACTOR); // Start 2 seconds after startup.
-        }
-        else if (kickIntervalTicks > 0) {
+        } else if (kickIntervalTicks > 0) {
             new PartyAutoKickTask().runTaskTimer(this, kickIntervalTicks, kickIntervalTicks);
         }
 

@@ -11,7 +11,7 @@ import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.config.Config;
 
 public final class LocaleLoader {
-    private static final String BUNDLE_ROOT = "com.gmail.nossr50.locale.locale";
+    private static final String BUNDLE_ROOT = "locale.locale";
     private static ResourceBundle bundle = null;
     private static ResourceBundle enBundle = null;
 
@@ -86,7 +86,9 @@ public final class LocaleLoader {
                 locale = new Locale(myLocale[0], myLocale[1]);
             }
 
-            bundle = ResourceBundle.getBundle(BUNDLE_ROOT, locale);
+            if (locale != null) {
+                bundle = ResourceBundle.getBundle(BUNDLE_ROOT, locale);
+            }
             enBundle = ResourceBundle.getBundle(BUNDLE_ROOT, Locale.US);
         }
     }

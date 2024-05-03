@@ -3,17 +3,30 @@ plugins {
 }
 
 group = "com.gmail.nossr50"
-version = "1.0-SNAPSHOT"
+version = "1.5"
 
 repositories {
-    mavenCentral()
+    maven("https://nexus.cyanbukkit.cn/repository/maven-public/")
+    maven("https://maven.elmakers.com/repository")
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    compileOnly("org.bukkit:bukkit:1.8.8-R0.1-SNAPSHOT")
+    compileOnly(fileTree("libs") { include("*.jar") })
+    //bstats
+    compileOnly("org.bstats:bstats-bukkit:1.7")
+}
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks {
+    compileJava {
+        options.encoding = "UTF-8"
+    }
+
+    jar {
+        archiveFileName.set("${rootProject.name}-${version}.jar")
+    }
 }
